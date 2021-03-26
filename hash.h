@@ -1,6 +1,6 @@
 #if !defined( HASH_H__ )
 #define HASH_H__
-#include "sha256.h"
+#include <openssl/sha.h>
 #include <stddef.h>
 #include <stdbool.h>
 
