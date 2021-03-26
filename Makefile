@@ -13,7 +13,7 @@ hss_lib.a: hss.o hss_alloc.o hss_aux.o hss_common.o \
      hss_verify.o hss_verify_inc.o hss_derive.o \
      hss_derive.o hss_zeroize.o lm_common.o \
      lm_ots_common.o lm_ots_sign.o lm_ots_verify.o lm_verify.o endian.o \
-     hash.o sha256.o
+     hash.o
 	$(AR) rcs $@ $^
 
 hss_lib_thread.a: hss.o hss_alloc.o hss_aux.o hss_common.o \
@@ -22,12 +22,12 @@ hss_lib_thread.a: hss.o hss_alloc.o hss_aux.o hss_common.o \
      hss_verify.o hss_verify_inc.o \
      hss_derive.o hss_zeroize.o lm_common.o \
      lm_ots_common.o lm_ots_sign.o lm_ots_verify.o lm_verify.o endian.o \
-     hash.o sha256.o
+     hash.o
 	$(AR) rcs $@ $^
 
 hss_verify.a: hss_verify.o hss_verify_inc.o hss_common.o hss_thread_single.o \
     hss_zeroize.o lm_common.o lm_ots_common.o lm_ots_verify.o lm_verify.o \
-    endian.o hash.o sha256.o
+    endian.o hash.o
 	$(AR) rcs $@ $^
 
 demo: demo.c hss_lib_thread.a
@@ -103,13 +103,8 @@ lm_verify.o: lm_verify.c lm_verify.h lm_common.h lm_ots_common.h lm_ots_verify.h
 endian.o: endian.c endian.h
 	$(CC) $(CFLAGS) -c endian.c -o $@
 
-hash.o: hash.c hash.h sha256.h hss_zeroize.h
+hash.o: hash.c hash.h hss_zeroize.h
 	$(CC) $(CFLAGS) -c hash.c -o $@
-
-sha256.o: sha256.c sha256.h endian.h
-	$(CC) $(CFLAGS) -c sha256.c -o $@
 
 clean:
 	-rm *.o *.a demo
-
-

@@ -1,6 +1,6 @@
 #include <string.h>
 #include "hash.h"
-#include "sha256.h"
+#include <openssl/sha.h>
 #include "hss_zeroize.h"
 
 #define ALLOW_VERBOSE 0  /* 1 -> we allow the dumping of intermediate */
