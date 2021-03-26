@@ -5,7 +5,8 @@ CFLAGS = -Wall -O3
 all: hss_lib.a \
      hss_lib_thread.a \
      hss_verify.a \
-     demo
+     demo \
+	 signer
 
 hss_lib.a: hss.o hss_alloc.o hss_aux.o hss_common.o \
      hss_compute.o hss_generate.o hss_keygen.o hss_param.o hss_reserve.o \
@@ -33,6 +34,8 @@ hss_verify.a: hss_verify.o hss_verify_inc.o hss_common.o hss_thread_single.o \
 demo: demo.c hss_lib_thread.a
 	$(CC) $(CFLAGS) demo.c hss_lib_thread.a -lcrypto -lpthread -o demo
 
+signer: signer.c hss_lib_thread.a
+	$(CC) $(CFLAGS) signer.c hss_lib_thread.a -lcrypto -lpthread -o signer
 
 hss.o: hss.c hss.h common_defs.h hash.h endian.h hss_internal.h hss_aux.h hss_derive.h
 	$(CC) $(CFLAGS) -c hss.c -o $@
@@ -107,4 +110,4 @@ hash.o: hash.c hash.h hss_zeroize.h
 	$(CC) $(CFLAGS) -c hash.c -o $@
 
 clean:
-	-rm *.o *.a demo
+	-rm *.o *.a demo signer
