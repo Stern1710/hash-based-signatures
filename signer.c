@@ -79,13 +79,12 @@ static void usage(char *program);
 
 static void usage(char *program) {
     printf( "Usage:\n" );
-    printf( " %s genkey [keyname]\n", program );
-    printf( " %s genkey [keyname] [parameter set]\n", program );
-    printf( " %s sign [keyname] [files to sign]\n", program );
-    printf( " %s sign-bulk [keyname] [folder to sign]\n", program );
-    printf( " %s verify [keyname] [files to verify]\n", program );
-    printf( " %s verify-bulk [keyname] [folder to verify]\n", program );
-    printf( " %s advance [keyname] [amount of advance]\n", program );
+    printf( " %s genkey <keyname> [parameter set]\n", program );
+    printf( " %s sign <keyname> [files to sign]\n", program );
+    printf( " %s sign-bulk <keyname> <folder to sign>\n", program );
+    printf( " %s verify <keyname> [files to verify]\n", program );
+    printf( " %s verify-bulk <keyname> <folder to verify>\n", program );
+    printf( " %s advance <keyname> <amount of advance>\n", program );
 }
 
 static const char *check_prefix( const char *s, const char *prefix ) {
@@ -161,7 +160,7 @@ int main(int argc, char **argv) {
         // }
         return 0;
     }
-    if (0 == strcmp( argv[1], "verify-bulk")) {
+    if (0 == strcmp( argv[1], "sign-bulk")) {
         if (argc != 4) {
             if (argc < 4) {
                 printf("Error: missing keyname and folder argument\n");
