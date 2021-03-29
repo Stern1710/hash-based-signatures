@@ -1,7 +1,16 @@
-# hash-based-signatures
-Based on the [reference implemenetation](https://github.com/cisco/hash-sigs) for LMS signatures, this is my own addition for bulk signing whole directories as part of my bachelor thesis
+# Hash Based Signature #
+
+This is an extension to the [reference implemenetation](https://github.com/cisco/hash-sigs) of LMS signatures with additional functionality to bulk sign and verfiy whole directories and their subfolders, passed as a single argument instead of all the files individually.
 
 ## General info ##
+
+For my bachelor thesis, the focus fell on hash-based signatures, in detail the Leighton-Micali Signatures (LMS) scheme which is explained in detail in [RFC 8554](https://tools.ietf.org/html/rfc8554). As quantum computing is on the rise, the now widely-used signature schemes my be suspectable to successfull attacks on their underlying asymmetric cryptographic functions. At the moment, most believed to be cryptograhically secure algorithm use mathematical problems such as factorisation or discrete logarithm which are hard to crack on the current computer systems. With clever use of quantum effects, Shor has described in [his groundbracking paper](https://ieeexplore.ieee.org/abstract/document/365700) a way to reduce the runtime complexity of the aforementioned mathematical problems from exponential to polynomial time.
+
+Hash functions are not affected by Shor's algorithm and their time complexity may only be reduced by the the factor of two, which is the same for symmetric cyphers. Therefore a algorithm which at the moment provides a security of $2^{128}$ bits will have a security of $2^{64}$ bits against quantum computing attacks. In return, doubling the security and with this often just the key sizes is enough to keep the security up to secure standards.
+
+Hash-based signatures are divided into the stateless and statefull schemes. Stateless offer advantages with typically simpler implementations and are easier to mange, but suffer from bigger signature sizes and decreased performance. For statefull signature schemes, the XMSS (Extended Merkle signature scheme) and LMS seem to be the most promising approaches. However, LMS is typically the faster method, therefore the decision fell on the usage of this scheme.
+
+There already exists a reference implemenetation](https://github.com/cisco/hash-sigs)for LMS signatures which is the basis for this extension with new functions such as bulk signing. The features are usage are described in the according sections.
 
 ## Technologies ##
 
