@@ -34,43 +34,91 @@ The program will provide all the features from the reference implementation and 
 signer <command> [parameters]
 ```
 
+The programm is very easy to use and each command follows a very simple pattern. The first argument is always the chosen option which can either be generating a key, signing, verifying or advancing the key. The second argument is the keyname, either for generating or using it. At the third position come either the files/folder to work with, the amount to advance they key or the paramter set for generating the key.
+
+Sections of the syntax noted with `<>` have to be there, sections with `[]` are optional. However it should be stated that for files, at least a single file has to be passed as no file to sign/verify does not make sense, passing more than one file is of course possible and encouraged as no the loading of the private key also takes some time. Plese note that command and optional parameter do *not* need the brackets around them.
+
 ### Key generation ###
 
 ```text
-signer genkey [keyname]
+signer genkey <keyname> [parameter set]
 ```
 
-```text
-signer genkey [keyname] [parameter set]
-```
+Generates a key with the given name. Usually, the private key, public key and an auxiliary file are created with resonable default values. By default, a Merkle trees with two levels is used. Top tree has 20 levels, bottom tree has 10 which is notaed as `20/10`. The Winternitz is set to 8 for both trees; this minimizes the signature size, gives us a reasonable genkey time (3 minutes with threading), good load times and a billion signatures per key.
+
+The parameter set is in the form of `h0/w0,h1/w1:aux_size` like `15/4,10/8:2000`, where `h0` and `h1` denote the heights, `w0` and `w1` the Winternitz parameter and `aux_size` the maximum size of the auxdata file. Winternitz and auxiliary can be obmitted, in this case default values will be used.
+
+Moreover, a custom `seed` (usually 32 byte hex-notation)  and `i` (16 byte hex-notation) value can be set which will be used for the top level tree, where `i` denotes the qunite identifier for the public/private key pair and `seed` is used as additional random data during the hashing process to increase security. However, this should only be done for specialized testing purposes, not for real world use as this could make forgeries far more likely to be plausible. Therefore it is highly discourage to set `seed`and `i` yourself. Setting would be done like `param=value`, i.e. `seed=0123456789abcdef i=fedcba98765432`.
 
 ### Signing ###
 
 ```text
-signer sign [keyname] [files to sign]
+signer sign <keyname> [files to sign]
 ```
 
 ```text
-signer sign-bulk [keyname] [folder to sign]
+signer sign-bulk <keyname> <folder to sign>
 ```
+
+Signing one or more files can be done by either specifying all the files individually which should be signed with to the `sign` command or just pass a directory to the `sign-bulk` command. A single folder or one or more files can be passed to the respective command.
 
 ### Verification ###
 
 ```text
-signer verify [keyname] [files to verify]
+signer verify <keyname> [files to verify]
 ```
 
 ```text
-signer verify-bulk [keyname] [folder to verify]
+signer verify-bulk <keyname> <folder to verify>
 ```
+
+Verfifying one or more files can be done by either specifying all the files individually which should be signed with to the `verify` command or just pass a directory to the `verify-bulk` command. A single folder or one or more files can be passed to the respective command.
 
 ### Key advancing ###
 
 ```text
-signer advance [keyname] [amount of advance]
+signer advance <keyname> <amount of advance>
 ```
 
-To be extended with more detailed information on how to do the commands.
+Advances the key with a certain amount, i.e. marking a given number of keys as unavailable for future signing operations. This behaves like signing an given amount of messages, but obviously without the actual signing operation.
+
+### Example usage ###
+
+First off, create the new key pair with the name `myKeys` and the parameter set `15/4,10/8:2000`
+
+```text
+signer genkey myKeys 15/4,10/8:2000
+```
+
+Use the generated key pair to sign two messages called `myTestFile1` and `myTestFile2`.
+
+```text
+signer sign myKeys path/to/myTestFile1 path/to/myTestFile2
+```
+
+Use the generated key pair to sign all files in a directory `myTestDir`
+
+```text
+signer sign-bulk myKeys path/to/myTestDir
+```
+
+Verify `myTestFile1` and `myTestFile2`
+
+```text
+signer verify myKeys path/to/myTestFile1 path/to/myTestFile2
+```
+
+Verify `myTestDir`
+
+```text
+signer verify-bulk myKeys path/to/myTestDir
+```
+
+Advance the keypair by the amount of three, therefore making the next three private keys unavailable for signing messages as the statefull scheme thinks they were already used.
+
+```text
+signer advance myKeys 3
+```
 
 ## Credits ##
 
@@ -84,34 +132,4 @@ In case one got questions about my modifications to the source code, please drop
 
 ## Licence ##
 
-This program is, as the reference implementation, provided under the BSD-3-Clause License.
-
-******************************************************************************
-Copyright (c) 2017 Cisco Systems, Inc.  All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-Redistributions in binary form must reproduce the above
-  copyright notice, this list of conditions and the following
-  disclaimer in the documentation and/or other materials provided
-  with the distribution.
-Neither the name of the Cisco Systems, Inc. nor the names of its
-  contributors may be used to endorse or promote products derived
-  from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************
+This program is, as the reference implementation, provided under the BSD-3-Clause License. The terms of the license can be seen in the `LICENSE` file.
