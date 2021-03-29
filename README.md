@@ -30,40 +30,44 @@ The program will provide all the features from the reference implementation and 
 
 ## Usage ##
 
+```text
+signer <command> [parameters]
+```
+
 ### Key generation ###
 
 ```text
-printf( " %s genkey [keyname]\n", program );
+signer genkey [keyname]
 ```
 
 ```text
-printf( " %s genkey [keyname] [parameter set]\n", program );
+signer genkey [keyname] [parameter set]
 ```
 
 ### Signing ###
 
 ```text
-printf( " %s sign [keyname] [files to sign]\n", program );
+signer sign [keyname] [files to sign]
 ```
 
 ```text
-printf( " %s sign-bulk [keyname] [folder to sign]\n", program );
+signer sign-bulk [keyname] [folder to sign]
 ```
 
 ### Verification ###
 
 ```text
-printf( " %s verify [keyname] [files to verify]\n", program );
+signer verify [keyname] [files to verify]
 ```
 
 ```text
-printf( " %s verify-bulk [keyname] [folder to verify]\n", program );
+signer verify-bulk [keyname] [folder to verify]
 ```
 
 ### Key advancing ###
 
 ```text
-printf( " %s advance [keyname] [amount of advance]\n", program );
+signer advance [keyname] [amount of advance]
 ```
 
 To be extended with more detailed information on how to do the commands.
