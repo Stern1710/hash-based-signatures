@@ -10,7 +10,7 @@ Hash functions are not affected by Shor's algorithm and their time complexity ma
 
 Hash-based signatures are divided into the stateless and statefull schemes. Stateless offer advantages with typically simpler implementations and are easier to mange, but suffer from bigger signature sizes and decreased performance. For statefull signature schemes, the XMSS (Extended Merkle signature scheme) and LMS seem to be the most promising approaches. However, LMS is typically the faster method, therefore the decision fell on the usage of this scheme.
 
-There already exists a reference implemenetation](https://github.com/cisco/hash-sigs)for LMS signatures which is the basis for this extension with new functions such as bulk signing. The features are usage are described in the according sections.
+There already exists a [reference implemenetation](https://github.com/cisco/hash-sigs)for LMS signatures which is the basis for this extension with new functions such as bulk signing. The features are usage are described in the according sections.
 
 ## Technologies ##
 
@@ -26,15 +26,53 @@ The code also relies on the hash function from the openssl libraries. Out of the
 
 ## Features ##
 
-The program will provide all the features from the reference implementation and adds some extensions to this. For signing and verifying, folders (including subfolders) can be done in one pass by just passing the folder as a single argument. Also the output will be reformated and only done after all signing/verification operations are completed to reduce overhead by avoiding a lot of smaller output operations to the standard output.
+The program will provide all the features from the reference implementation and adds some extensions to this. For signing and verifying, folders (including subfolders) can be done in one pass by just passing the folder as a single argument. Also the output will be reformated and only done after all signing/verification operations are completed to reduce overhead by avoiding a lot of smaller output operations to the standard output. The reference implementation offers the key generation, if needed with specialized parameter sets, as well as signing and verifying individual files and advancing the key.
 
 ## Usage ##
 
-To be done once the syntax is clear
+### Key generation ###
+
+```text
+printf( " %s genkey [keyname]\n", program );
+```
+
+```text
+printf( " %s genkey [keyname] [parameter set]\n", program );
+```
+
+### Signing ###
+
+```text
+printf( " %s sign [keyname] [files to sign]\n", program );
+```
+
+```text
+printf( " %s sign-bulk [keyname] [folder to sign]\n", program );
+```
+
+### Verification ###
+
+```text
+printf( " %s verify [keyname] [files to verify]\n", program );
+```
+
+```text
+printf( " %s verify-bulk [keyname] [folder to verify]\n", program );
+```
+
+### Key advancing ###
+
+```text
+printf( " %s advance [keyname] [amount of advance]\n", program );
+```
+
+To be extended with more detailed information on how to do the commands.
 
 ## Credits ##
 
 Many thanks to my supervisor a.Univ.-Prof, Dr. Josef Scharinger for making this all possible and providing me with great ideas and scientific literature.
+
+Many thanks to the authors of the often mentioned reference implementation for providing the code under the BSD-3-Clause License.
 
 ## Contact ##
 
