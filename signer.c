@@ -75,6 +75,12 @@ const char *default_parm_set = "20/8,10/8";
 static const char *seedbits = 0;
 static const char *i_value = 0;
 
+/* 
+ * Indicator for the bulk operation function if the sign or the
+ * verify function for the generated file list has to be used
+*/
+enum bulk_operation {bulk_signing, bulk_verifying};
+
 /* Define enums to indicate success or failure of an signing/verification operation
  * No_sig is only for verification operations when no signature ofr the file could be found
 */
@@ -93,9 +99,8 @@ struct progress {
 /* Main command functionality */
 static int keygen(const char *keyname, const char *parm_set);
 static int sign(const char *keyname, char **files, const int num_files);
-static int sign_bulk(const char *keyname, char *files);
 static int verify(const char *keyname, char **files, const int num_files);
-static int verify_bulk (const char *keyname, char *files);
+static int bulk (const char *keyname, char *files, enum bulk_operation op);
 static int advance(const char *keyname, const char *text_advance);
 
 /* For key generation */
@@ -444,42 +449,6 @@ static int sign(const char *keyname, char **files, const int num_files) {
     return 1;
 }
 
-
-/**
- * Signs all files from a passend directory.
- * First finds the files using the find_files functions which brings the locations in an appropriate format.
- * The result is then passed to the sign function which takes care of the sign command from the bash.
- * For the sign function, the passed parameters looke like it would come from the main function, therefore no 
- * changes apart from fixing a possible faulty loop-condition had to be done.
- */ 
-static int sign_bulk(const char *keyname, char *files) {
-    int file_size = 4;
-    int cur_pos = 0;
-    char **found_files = malloc(file_size * sizeof(char*));
-    
-    if (!found_files) {
-        printf("Failed to allocate space for finding files, aborting now ...\n");
-        return 0;
-    }
-    found_files = find_files(files, found_files, &file_size, &cur_pos);
-    printf("%d files to sign\n", cur_pos);
-    
-    //Realloc files to found_files to actually needed space
-    found_files = realloc(found_files, cur_pos * sizeof(char*));
-    if (found_files) { //Keep on only if not null
-        sign(keyname, found_files, cur_pos);
-    } else {
-        printf("Failed to reallocate area, so signing operation is not possible\n");
-    }
-    
-    //Free all the files
-    for (int i=0; i < cur_pos; i++) { //Free each path that was allocated in find_files
-        free(found_files[i]);
-    }
-    free(found_files);
-    return 1;
-}
-
 /*
  * This function implements the 'verify' command; this reads the public key,
  * and then for each file, reads the file and the signature from disk, and
@@ -600,13 +569,13 @@ static int verify(const char *keyname, char **files, const int num_files) {
 }
 
 /**
- * Verifies all files from a passend directory.
+ * Signs or verifies all files from a passend directory, the operation is indicated by the passed enum
  * First finds the files using the find_files functions which brings the locations in an appropriate format.
- * The result is then passed to the verify function which takes care of the verify command from the bash.
- * For the verify function, the passed parameters looke like it would come from the main function, therefore no 
+ * The result is then passed to the sign/verify function which takes care of the verify command from the bash.
+ * For the sign/verify function, the passed parameters looke like it would come from the main function, therefore no 
  * changes apart from fixing a possible faulty loop-condition had to be done.
  */ 
-static int verify_bulk (const char *keyname, char *files) {
+static int bulk (const char *keyname, char *files, enum bulk_operation op) {
     int file_size = 4;
     int cur_pos = 0;
     char **found_files = malloc(file_size * sizeof(char*));
@@ -616,14 +585,22 @@ static int verify_bulk (const char *keyname, char *files) {
         return 0;
     }
     found_files = find_files(files, found_files, &file_size, &cur_pos);
-    printf("%d files to verify\n", cur_pos);
+    if (op == bulk_signing) {
+        printf("%d files to sign\n", cur_pos);
+    } else {
+            printf("%d files to verify\n", cur_pos);
+    }
     
     //Realloc files to found_files to actually needed space
     found_files = realloc(found_files, cur_pos * sizeof(char*));
     if (found_files) { //Keep on only if not null
-        verify(keyname, found_files, cur_pos);
+        if (op == bulk_signing) {
+            sign(keyname, found_files, cur_pos);
+        } else {
+            verify(keyname, found_files, cur_pos);
+        }
     } else {
-        printf("Failed to reallocate area, so verification operation is not possible\n");
+        printf("Failed to reallocate area, operation is not possible\n");
     }
     
     //Free all the files
@@ -1193,7 +1170,7 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!sign_bulk( argv[2], argv[3] )) {
+        if (!bulk( argv[2], argv[3], bulk_signing)) {
             printf("Error signing bulk\n");
         }
 
@@ -1220,7 +1197,7 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!verify_bulk(argv[2], argv[3])) {
+        if (!bulk(argv[2], argv[3], bulk_verifying)) {
             printf("Error verifying bulk\n");
         }
 
