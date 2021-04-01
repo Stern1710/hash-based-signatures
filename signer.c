@@ -92,9 +92,9 @@ struct progress {
 /* ---------- Function header definition ---------- */
 /* Main command functionality */
 static int keygen(const char *keyname, const char *parm_set);
-static int sign(const char *keyname, char **files, int num_files);
+static int sign(const char *keyname, char **files, const int num_files);
 static int sign_bulk(const char *keyname, char **files);
-static int verify(const char *keyname, char **files);
+static int verify(const char *keyname, char **files, const int num_files);
 static int verify_bulk (const char *keyname, char **files);
 static int advance(const char *keyname, const char *text_advance);
 
@@ -273,7 +273,7 @@ static int keygen(const char *keyname, const char *parm_set) {
  * then for each file, loads it into memory, generates the signature, and
  * writes the signature out to disk
  */
-static int sign(const char *keyname, char **files, int num_files) {
+static int sign(const char *keyname, char **files, const int num_files) {
     struct progress sign_progress[num_files];
 
     int private_key_filename_len = strlen(keyname) + sizeof (".prv" ) + 1;
@@ -428,18 +428,19 @@ static int sign(const char *keyname, char **files, int num_files) {
     /* Print the results of successfull / failed signing operations one after the other */
     printf("\n\n--- Successfull signatures:\n");
     for (int j=0; j < num_files; j++) {
-        if (sign_progress[i].state == success) {
+        if (sign_progress[j].state == success) {
             printf("%s.sig; ", sign_progress[j].name);
         }
     }
 
     printf("\n\n--- Failed to create signatures for:\n");
     for (int j=0; j < num_files; j++) {
-        if (sign_progress[i].state == fail) {
+        if (sign_progress[j].state == fail) {
             printf("%s; ", sign_progress[j].name);
         }
     }
 
+    printf("\n\n --- End of signing ---\n");
     return 1;
 }
 
@@ -454,8 +455,9 @@ static int sign_bulk(const char *keyname, char **files) {
  * It verifies each file incrementally, and so we don't need to assume the
  * file is short enough to fit into memory
  */
-static int verify(const char *keyname, char **files) {
+static int verify(const char *keyname, char **files, const int num_files) {
     /* Step 1: read in the public key */
+    struct progress sign_progress[num_files];
     size_t public_key_filename_len = strlen(keyname) + sizeof ".pub" + 1;
     char *public_key_filename = malloc(public_key_filename_len);
     if (!public_key_filename) {
@@ -469,24 +471,30 @@ static int verify(const char *keyname, char **files) {
          free(public_key_filename);
          return 0;
     }
+
+    printf("Verifying ...");
     int i;
     for (i=0; files[i]; i++) {
-        printf( "Verifying %s\n", files[i] );
+        if (i%10 == 0 && i > 0) { //Give the user some feel that something is happening
+            printf(".");
+        }
 
-            /* Read in the signatre */
-        size_t sig_file_name_len = strlen(files[i]) + sizeof( ".sig" ) + 1;
+        sign_progress[i].name = files[i];
+        sign_progress[i].state = fail;
+
+        /* Read in the signature */
+        size_t sig_file_name_len = strlen(sign_progress[i].name) + sizeof( ".sig" ) + 1;
         char *sig_file_name = malloc(sig_file_name_len);
         if (!sig_file_name) {
-            printf( "Error: malloc failure\n" );
             free(public_key_filename);
             return 0;
         }
-        sprintf( sig_file_name, "%s.sig", files[i] );
+        sprintf( sig_file_name, "%s.sig", sign_progress[i].name);
         size_t sig_len;
         void *sig = read_file( sig_file_name, &sig_len );
         free(sig_file_name ); sig_file_name = 0;
         if (!sig) {
-            printf( "    %s: unable to read signature file %s.sig\n", files[i], files[i] );
+            sign_progress[i].state = no_sig;
             continue;
         }
 
@@ -496,9 +504,8 @@ static int verify(const char *keyname, char **files) {
          * read it in in pieces, and use the API that allows us to verify
          * the message when given in pieces
          */
-        FILE *f = fopen( files[i], "r" );
+        FILE *f = fopen(sign_progress[i].name, "r" );
         if (!f) {
-            printf( "    %s: unable to read\n", files[i] );
             free(sig);
             continue;
         }
@@ -529,13 +536,34 @@ static int verify(const char *keyname, char **files) {
         free(sig);
 
         if (status) {
-            printf( "    Signature verified\n" );
-        } else {
-            printf( "    Signature NOT verified\n" );
+            sign_progress[i].state = success;
         }
     }
 
     free(public_key_filename);
+
+    /* Print the results of successfull / failed / non-sig verify operations one after the other */
+    printf("\n\n--- Successfull verifications:\n");
+    for (int j=0; j < num_files; j++) {
+        if (sign_progress[j].state == success) {
+            printf("%s; ", sign_progress[j].name);
+        }
+    }
+
+    printf("\n\n--- Failed verifications:\n");
+    for (int j=0; j < num_files; j++) {
+        if (sign_progress[j].state == fail) {
+            printf("%s; ", sign_progress[j].name);
+        }
+    }
+    printf("\n\n--- Unable to find signature file for:\n");
+    for (int j=0; j < num_files; j++) {
+        if (sign_progress[j].state == no_sig) {
+            printf("%s; ", sign_progress[j].name);
+        }
+    }
+    printf("\n\n --- End of verification ---\n");
+
     return 1;
 }
 
@@ -1034,7 +1062,6 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        printf("Argument number: %d\n", argc-3);
 
         if (!sign( argv[2], &argv[3], argc-3)) {
             printf("Error signing\n");
@@ -1057,18 +1084,18 @@ int main(int argc, char **argv) {
 
         return 0;
     }
-    if (0 == strcmp( argv[1], "verify" )) {
+    if (0 == strcmp(argv[1], "verify")) {
         if (argc < 4) {
             printf("Error: mssing keyname and file argument\n");
             usage(argv[0]);
             return 0;
         }
-        if (!verify( argv[2], &argv[3] )) {
+        if (!verify( argv[2], &argv[3], argc-3)) {
             printf("Error verifying\n");
         }
         return 0;
     }
-    if (0 == strcmp( argv[1], "verify-bulk" )) {
+    if (0 == strcmp(argv[1], "verify-bulk")) {
         if (argc != 4) {
             if (argc < 4) {
                 printf("Error: missing keyname and folder argument\n");
@@ -1084,13 +1111,13 @@ int main(int argc, char **argv) {
 
         return 0;
     }
-    if (0 == strcmp( argv[1], "advance" )) {
+    if (0 == strcmp( argv[1], "advance")) {
         if (argc != 4) {
             printf("Error: mssing amount to device the file\n");
             usage(argv[0]);
             return 0;
         }
-        if (!advance( argv[2], argv[3] )) {
+        if (!advance( argv[2], argv[3])) {
             printf( "Error advancing\n" );
         }
         return 0;
