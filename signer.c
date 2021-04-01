@@ -50,10 +50,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+#include <dirent.h>
 #include "hss.h"
 #include "hss_verify_inc.h"
 #include "hss_sign_inc.h"
-
 #include "hash.h"
 #include "hss_zeroize.h"
 
@@ -93,9 +93,9 @@ struct progress {
 /* Main command functionality */
 static int keygen(const char *keyname, const char *parm_set);
 static int sign(const char *keyname, char **files, const int num_files);
-static int sign_bulk(const char *keyname, char **files);
+static int sign_bulk(const char *keyname, char *files);
 static int verify(const char *keyname, char **files, const int num_files);
-static int verify_bulk (const char *keyname, char **files);
+static int verify_bulk (const char *keyname, char *files);
 static int advance(const char *keyname, const char *text_advance);
 
 /* For key generation */
@@ -110,6 +110,7 @@ static int parse_parm_set( int *levels, param_set_t *lm_array,
 static int get_integer(const char **p);
 
 /* For signing and verification */
+char **find_files(char* directory, char **files, int *file_size, int *cur_pos);
 static bool read_private_key( unsigned char *private_key,
                               size_t len_private_key, void *filename);                           
 static bool update_private_key( unsigned char *private_key,
@@ -268,7 +269,7 @@ static int keygen(const char *keyname, const char *parm_set) {
     return 1;
 }
 
-/*
+/**
  * This function implements the 'sign' command; it loads the private key, and
  * then for each file, loads it into memory, generates the signature, and
  * writes the signature out to disk
@@ -348,8 +349,7 @@ static int sign(const char *keyname, char **files, const int num_files) {
     }
 
     printf("Signing ...");
-    int i;
-    for (i=0; files[i]; i++) {
+    for (int i=0; files[i] && i < num_files; i++) {
         if (i%10 == 0 && i > 0) {
             printf(".");
         }
@@ -444,8 +444,40 @@ static int sign(const char *keyname, char **files, const int num_files) {
     return 1;
 }
 
-static int sign_bulk(const char *keyname, char **files) {
-    return 0;
+
+/**
+ * Signs all files from a passend directory.
+ * First finds the files using the find_files functions which brings the locations in an appropriate format.
+ * The result is then passed to the sign function which takes care of the sign command from the bash.
+ * For the sign function, the passed parameters looke like it would come from the main function, therefore no 
+ * changes apart from fixing a possible faulty loop-condition had to be done.
+ */ 
+static int sign_bulk(const char *keyname, char *files) {
+    int file_size = 4;
+    int cur_pos = 0;
+    char **found_files = malloc(file_size * sizeof(char*));
+    
+    if (!found_files) {
+        printf("Failed to allocate space for finding files, aborting now ...\n");
+        return 0;
+    }
+    found_files = find_files(files, found_files, &file_size, &cur_pos);
+    printf("%d files to sign\n", cur_pos);
+    
+    //Realloc files to found_files to actually needed space
+    found_files = realloc(found_files, cur_pos * sizeof(char*));
+    if (found_files) { //Keep on only if not null
+        sign(keyname, found_files, cur_pos);
+    } else {
+        printf("Failed to reallocate area, so signing operation is not possible\n");
+    }
+    
+    //Free all the files
+    for (int i=0; i < cur_pos; i++) { //Free each path that was allocated in find_files
+        free(found_files[i]);
+    }
+    free(found_files);
+    return 1;
 }
 
 /*
@@ -474,7 +506,7 @@ static int verify(const char *keyname, char **files, const int num_files) {
 
     printf("Verifying ...");
     int i;
-    for (i=0; files[i]; i++) {
+    for (i=0; files[i] && i < num_files; i++) {
         if (i%10 == 0 && i > 0) { //Give the user some feel that something is happening
             printf(".");
         }
@@ -567,8 +599,39 @@ static int verify(const char *keyname, char **files, const int num_files) {
     return 1;
 }
 
-static int verify_bulk (const char *keyname, char **files) {
-    return 0;
+/**
+ * Verifies all files from a passend directory.
+ * First finds the files using the find_files functions which brings the locations in an appropriate format.
+ * The result is then passed to the verify function which takes care of the verify command from the bash.
+ * For the verify function, the passed parameters looke like it would come from the main function, therefore no 
+ * changes apart from fixing a possible faulty loop-condition had to be done.
+ */ 
+static int verify_bulk (const char *keyname, char *files) {
+    int file_size = 4;
+    int cur_pos = 0;
+    char **found_files = malloc(file_size * sizeof(char*));
+    
+    if (!found_files) {
+        printf("Failed to allocate space for finding files, aborting now ...\n");
+        return 0;
+    }
+    found_files = find_files(files, found_files, &file_size, &cur_pos);
+    printf("%d files to verify\n", cur_pos);
+    
+    //Realloc files to found_files to actually needed space
+    found_files = realloc(found_files, cur_pos * sizeof(char*));
+    if (found_files) { //Keep on only if not null
+        verify(keyname, found_files, cur_pos);
+    } else {
+        printf("Failed to reallocate area, so verification operation is not possible\n");
+    }
+    
+    //Free all the files
+    for (int i=0; i < cur_pos; i++) { //Free each path that was allocated in find_files
+        free(found_files[i]);
+    }
+    free(found_files);
+    return 1;
 }
 
 /*
@@ -628,6 +691,8 @@ static int advance(const char *keyname, const char *text_advance) {
         hss_free_working_key(w);
         free(private_key_filename);
         return 0;
+    } else {
+
     }
 
         /* Now that we've loaded the private key, we fast-forward it */
@@ -880,6 +945,56 @@ static int get_integer(const char **p) {
 
 /* For signing and verification */
 
+/**
+ * Finds all files in the given directory and its subdirectories. Saves the files
+ * in the passed files array. Increase the array if needed
+ * Returns the actual number of elements in the array as an integer
+ */ 
+char **find_files(char* directory, char **files, int *file_size, int *cur_pos) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(directory);
+
+    if (d) {
+        while ((dir = readdir(d)) != NULL) { //Iterates over all elements in the folder
+            if(dir->d_type == DT_DIR) { //Is directory
+                if (strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..")) { //Checks that element is not referencing . or .. of linux file system
+                    size_t dir_path_len = strlen(directory) + strlen(dir->d_name) + 2; //Lenght of path with additional slash and terminator
+                    char *dir_path = malloc(dir_path_len); //Allocates size for full path 
+                    if (dir_path) { //Check if allocation was successfull
+                        sprintf(dir_path, "%s%s/", directory, dir->d_name); //Writes full path into allocated space
+                        files = find_files(dir_path, files, file_size, cur_pos); //Fill all files in the path
+                        free(dir_path); //Free the path, otherwise memory leak
+                    }
+                }
+            } else { //Is file
+                char *dot = strrchr(dir->d_name, '.'); //Grab last string after . separator --> null if no "." is in file name
+                if (!dot || (dot && strcmp(dot, ".sig"))) { //Check that file is not ending with .sig
+                    /* Check here if files is already full and needs to be increased in size (double it) */
+                    if (*cur_pos >= *file_size) {
+                        //We need to allocate more space through realloc
+                        files = realloc(files, (*file_size)*2 * sizeof(char*));
+                        if (!files) { //Failed, return from here
+                            return files;
+                        } else { //Otherwise double the file_size and reassign pointer
+                            *file_size = (*file_size)*2;
+                        }
+                    }
+
+                    size_t dir_path_file_len = strlen(directory) + strlen(dir->d_name) + 1;
+                    files[*cur_pos] = malloc(dir_path_file_len); //Allocate space for full path
+                    if (files[*cur_pos]) {
+                        sprintf(files[*cur_pos], "%s%s", directory, dir->d_name); //Write full path of file to allocated space
+                        (*cur_pos)++;
+                    }
+                }
+            }
+        }
+        closedir(d);
+    }
+    return files;
+}
+
 /*
  * This retrieves the private key from secure storage; in this case, a file on
  * the filesystem.  The context pointer we use here is the filename
@@ -1078,7 +1193,7 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!sign_bulk( argv[2], &argv[3] )) {
+        if (!sign_bulk( argv[2], argv[3] )) {
             printf("Error signing bulk\n");
         }
 
@@ -1105,7 +1220,7 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!verify_bulk(argv[2], &argv[3])) {
+        if (!verify_bulk(argv[2], argv[3])) {
             printf("Error verifying bulk\n");
         }
 
@@ -1118,7 +1233,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (!advance( argv[2], argv[3])) {
-            printf( "Error advancing\n" );
+            printf( "Error advancing\n");
         }
         return 0;
     }
