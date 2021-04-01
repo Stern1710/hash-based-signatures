@@ -72,17 +72,27 @@
    /* good load times (perhaps 1 second), and a billion signatures per key */
 const char *default_parm_set = "20/8,10/8";
 
-#define DEFAULT_AUX_DATA 10916   /* Use 10+k of aux data (which works well */
-                            /* with the above default parameter set) */
-
 static const char *seedbits = 0;
 static const char *i_value = 0;
 
+/* Define enums to indicate success or failure of an signing/verification operation
+ * No_sig is only for verification operations when no signature ofr the file could be found
+*/
+enum success_state {success, fail, no_sig};
+
+//Define struct elements which hold the state of verification/signing for a file and the filename itself
+struct progress {
+    char *name;
+    enum success_state state;
+};
+
+#define DEFAULT_AUX_DATA 10916   /* Use 10+k of aux data (which works well */
+                            /* with the above default parameter set) */
 
 /* ---------- Function header definition ---------- */
 /* Main command functionality */
 static int keygen(const char *keyname, const char *parm_set);
-static int sign(const char *keyname, char **files);
+static int sign(const char *keyname, char **files, int num_files);
 static int sign_bulk(const char *keyname, char **files);
 static int verify(const char *keyname, char **files);
 static int verify_bulk (const char *keyname, char **files);
@@ -263,7 +273,9 @@ static int keygen(const char *keyname, const char *parm_set) {
  * then for each file, loads it into memory, generates the signature, and
  * writes the signature out to disk
  */
-static int sign(const char *keyname, char **files) {
+static int sign(const char *keyname, char **files, int num_files) {
+    struct progress sign_progress[num_files];
+
     int private_key_filename_len = strlen(keyname) + sizeof (".prv" ) + 1;
     char *private_key_filename = malloc(private_key_filename_len);
     if (!private_key_filename) {
@@ -334,9 +346,16 @@ static int sign(const char *keyname, char **files) {
         free(private_key_filename);
         return 0;
     }
+
+    printf("Signing ...");
     int i;
     for (i=0; files[i]; i++) {
-        printf( "Signing %s\n", files[i] );
+        if (i%10 == 0 && i > 0) {
+            printf(".");
+        }
+
+        sign_progress[i].name = files[i];
+        sign_progress[i].state = fail;
 
         /*
          * Read the file in, and generate the signature.  We don't want to
@@ -344,9 +363,9 @@ static int sign(const char *keyname, char **files) {
          * read it in in pieces, and use the API that allows us to sign
          * the message when given in pieces
          */
-        FILE *f = fopen( files[i], "r" );
+        FILE *f = fopen(sign_progress[i].name, "r" );
         if (!f) {
-            printf( "    %s: unable to read\n", files[i] );
+            printf( "    %s: unable to read\n", sign_progress[i].name);
             continue;
         }
 
@@ -377,31 +396,27 @@ static int sign(const char *keyname, char **files) {
              0);                 /* Use the defaults for extra info */
 
         if (!status) {
-            printf( "    Unable to generate signature\n" );
             continue;
         }
 
-        size_t sig_file_name_len = strlen(files[i]) + sizeof( ".sig" ) + 1;
+        size_t sig_file_name_len = strlen(sign_progress[i].name) + sizeof( ".sig" ) + 1;
         char *sig_file_name = malloc( sig_file_name_len );
         if (!sig_file_name) {
-            printf( "    Malloc failure\n" );
             continue;
         }
-        sprintf( sig_file_name, "%s.sig", files[i] );
+        sprintf( sig_file_name, "%s.sig", sign_progress[i].name);
         f = fopen( sig_file_name, "w" );
         if (!f) {
-            printf( "    %s: unable to create\n", sig_file_name );
             free(sig_file_name);
             continue;
         }
         if (1 != fwrite( sig, sig_len, 1, f )) {
-            printf( "    %s: unable to write\n", sig_file_name );
             fclose(f);
             free(sig_file_name);
             continue;
         }
         fclose(f);
-        printf( "    signed (%s)\n", sig_file_name );
+        sign_progress[i].state = success;
         free(sig_file_name);
     }
 
@@ -409,6 +424,22 @@ static int sign(const char *keyname, char **files) {
     free(aux_filename);
     free(private_key_filename);
     free(sig);
+
+    /* Print the results of successfull / failed signing operations one after the other */
+    printf("\n\n--- Successfull signatures:\n");
+    for (int j=0; j < num_files; j++) {
+        if (sign_progress[i].state == success) {
+            printf("%s.sig; ", sign_progress[j].name);
+        }
+    }
+
+    printf("\n\n--- Failed to create signatures for:\n");
+    for (int j=0; j < num_files; j++) {
+        if (sign_progress[i].state == fail) {
+            printf("%s; ", sign_progress[j].name);
+        }
+    }
+
     return 1;
 }
 
@@ -805,6 +836,9 @@ static int parse_parm_set( int *levels, param_set_t *lm_array,
     return 1;
 }
 
+/**
+ * Returns the first integer value found in a string
+ */
 static int get_integer(const char **p) {
     int n = 0;
 
@@ -874,7 +908,7 @@ static bool update_private_key( unsigned char *private_key,
  * signatures are in contiguous memory; this is used to read them in.
  *
  * This isn't used to read in the files being signed/verified; we read
- * those in chunks within the sign()/verify() routines below.
+ * those in chunks within the sign()/verify() functions.
  */
 void *read_file( const char *filename, size_t *len ) {
     FILE *f = fopen( filename, "r" );
@@ -1000,7 +1034,9 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!sign( argv[2], &argv[3] )) {
+        printf("Argument number: %d\n", argc-3);
+
+        if (!sign( argv[2], &argv[3], argc-3)) {
             printf("Error signing\n");
         }
         return 0;
