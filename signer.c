@@ -576,38 +576,41 @@ static int verify(const char *keyname, char **files, const int num_files) {
  * changes apart from fixing a possible faulty loop-condition had to be done.
  */ 
 static int bulk (const char *keyname, char *files, enum bulk_operation op) {
-    int file_size = 4;
+    int file_size = 4; //Instanciate with the initial size of 4
     int cur_pos = 0;
     char **found_files = malloc(file_size * sizeof(char*));
     
     if (!found_files) {
-        printf("Failed to allocate space for finding files, aborting now ...\n");
+        printf("Failed to allocate space for finding files.\n");
         return 0;
     }
+
+    //Allow overwriting of found_files as it is realloced most likely in the find_files method
     found_files = find_files(files, found_files, &file_size, &cur_pos);
-    if (op == bulk_signing) {
-        printf("%d files to sign\n", cur_pos);
-    } else {
-            printf("%d files to verify\n", cur_pos);
-    }
-    
     //Realloc files to found_files to actually needed space
-    found_files = realloc(found_files, cur_pos * sizeof(char*));
-    if (found_files) { //Keep on only if not null
-        if (op == bulk_signing) {
-            sign(keyname, found_files, cur_pos);
-        } else {
+    char ** reduced_found_files = realloc(found_files, cur_pos * sizeof(char*));
+    if (reduced_found_files) { //Reassign shrunken area only if realloc was successfull
+        found_files = reduced_found_files;
+    }    
+
+    switch(op) {
+        case bulk_signing: 
+            printf("%d files to sign\n", cur_pos);
+            sign(keyname, found_files, cur_pos); 
+            break;
+        case bulk_verifying: 
+            printf("%d files to verify\n", cur_pos);
             verify(keyname, found_files, cur_pos);
-        }
-    } else {
-        printf("Failed to reallocate area, operation is not possible\n");
+            break;
+        default: 
+            break;
     }
-    
+
     //Free all the files
     for (int i=0; i < cur_pos; i++) { //Free each path that was allocated in find_files
         free(found_files[i]);
     }
-    free(found_files);
+    free(found_files); //Free the pointer to the pointers
     return 1;
 }
 
@@ -928,11 +931,11 @@ static int get_integer(const char **p) {
  * Returns the actual number of elements in the array as an integer
  */ 
 char **find_files(char* directory, char **files, int *file_size, int *cur_pos) {
-    DIR *d;
+    DIR *d = opendir(directory);
     struct dirent *dir;
-    d = opendir(directory);
 
-    if (d) {
+
+    if (d) { //Was able to open directory
         while ((dir = readdir(d)) != NULL) { //Iterates over all elements in the folder
             if(dir->d_type == DT_DIR) { //Is directory
                 if (strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..")) { //Checks that element is not referencing . or .. of linux file system
@@ -950,10 +953,11 @@ char **find_files(char* directory, char **files, int *file_size, int *cur_pos) {
                     /* Check here if files is already full and needs to be increased in size (double it) */
                     if (*cur_pos >= *file_size) {
                         //We need to allocate more space through realloc
-                        files = realloc(files, (*file_size)*2 * sizeof(char*));
-                        if (!files) { //Failed, return from here
+                        char **files_ext = realloc(files, (*file_size)*2 * sizeof(char*));
+                        if (!files) { //Failed, return old allocated area
                             return files;
                         } else { //Otherwise double the file_size and reassign pointer
+                            files = files_ext;
                             *file_size = (*file_size)*2;
                         }
                     }
@@ -961,8 +965,7 @@ char **find_files(char* directory, char **files, int *file_size, int *cur_pos) {
                     size_t dir_path_file_len = strlen(directory) + strlen(dir->d_name) + 1;
                     files[*cur_pos] = malloc(dir_path_file_len); //Allocate space for full path
                     if (files[*cur_pos]) {
-                        sprintf(files[*cur_pos], "%s%s", directory, dir->d_name); //Write full path of file to allocated space
-                        (*cur_pos)++;
+                        sprintf(files[(*cur_pos)++], "%s%s", directory, dir->d_name); //Write full path of file to allocated space
                     }
                 }
             }
