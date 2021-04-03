@@ -52,7 +52,5 @@ Mkfile.old
 dkms.conf
 
 # Executeables
-demo
-test_hss
 signer
 .vscode
