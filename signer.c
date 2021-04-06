@@ -431,19 +431,25 @@ static int sign(const char *keyname, char **files, const int num_files) {
     free(sig);
 
     /* Print the results of successfull / failed signing operations one after the other */
+    int count = 0;
     printf("\n\n--- Successfull signatures:\n");
     for (int j=0; j < num_files; j++) {
         if (sign_progress[j].state == success) {
             printf("%s.sig; ", sign_progress[j].name);
+            count++;
         }
     }
+    printf("\n\n%d of %d files", count, num_files);
 
+    count = 0;
     printf("\n\n--- Failed to create signatures for:\n");
     for (int j=0; j < num_files; j++) {
         if (sign_progress[j].state == fail) {
             printf("%s; ", sign_progress[j].name);
+            count++;
         }
     }
+    printf("\n\n%d of %d files", count, num_files);
 
     printf("\n\n --- End of signing ---\n");
     return 1;
@@ -544,25 +550,35 @@ static int verify(const char *keyname, char **files, const int num_files) {
     free(public_key_filename);
 
     /* Print the results of successfull / failed / non-sig verify operations one after the other */
+    int count = 0;
     printf("\n\n--- Successfull verifications:\n");
     for (int j=0; j < num_files; j++) {
         if (sign_progress[j].state == success) {
             printf("%s; ", sign_progress[j].name);
+            count++;
         }
     }
+    printf("\n\n%d of %d files", count, num_files);
 
+    count = 0;
     printf("\n\n--- Failed verifications:\n");
     for (int j=0; j < num_files; j++) {
         if (sign_progress[j].state == fail) {
             printf("%s; ", sign_progress[j].name);
+            count++;
         }
     }
+    printf("\n\n%d of %d files", count, num_files);
+
+    count = 0;
     printf("\n\n--- Unable to find signature file for:\n");
     for (int j=0; j < num_files; j++) {
         if (sign_progress[j].state == no_sig) {
             printf("%s; ", sign_progress[j].name);
+            count++;
         }
     }
+    printf("\n\n%d of %d files", count, num_files);
     printf("\n\n --- End of verification ---\n");
 
     return 1;
