@@ -124,16 +124,17 @@ signer advance myKeys 3
 
 The following parameter sets have been tested with the current state of the implementation using the following parameters. The signature sizes are the ones meassured on the system, the meassured time is taken from a Ryzen 5 mobile processing unit. For the hash function SHA-256 was used, therefore n equals to 32. We ignored the Winternitz parameter of w=1 deliberatly as this extreme settings seems very unlikely to us to be used due to the very large signature sizes where performance can be gained from using other tricks such as advancing the key, generating trees on demand, etc.
 
-| Type    | h(:h)   | w     | aux   |  KeyGenTime  | SigTime    |  SigSize |
-| ------- |:-------:| -----:| -----:|   -----: |       -----:|      -----:|
-| LMS     | 20      | 2     |         |             |             |
-| LMS     | 20      | 8     |         |             |             |
-| HSS     | 20:10   | 2     |         |             |             |
-| HSS     | 20:10   | 4     |         |             |             |
-| HSS     | 20:10   | 8     |         |             |             |
-| HSS     | 25:15   | 2     |         |             |             |
-| HSS     | 25:15   | 4     |         |             |             |
-| HSS     | 25:15   | 8     |         |             |             |
+| Type    | h(:h)   | w     | aux     |  KeyGenTime  | SigTime    |  SigSize | Signatures | Key Lifetime |
+| ------- |:-------:| -----:|   -----:|       -----: |      -----:|    -----:|      -----:|        -----:|
+| LMS     | 20      | 2     |         |              |            |          |            |              |
+| LMS     | 20      | 4     |         |              |            |          |            |              |
+| LMS     | 20      | 8     |         |              |            |          |            |              |
+| HSS     | 20:10   | 2     |         |              |            |          |            |              |
+| HSS     | 20:10   | 4     |         |              |            |          |            |              |
+| HSS     | 20:10   | 8     |         |              |            |          |            |              |
+| HSS     | 25:15   | 2     |         |              |            |          |            |              |
+| HSS     | 25:15   | 4     |         |              |            |          |            |              |
+| HSS     | 25:15   | 8     |         |              |            |          |            |              |
 
 ## Credits ##
 
