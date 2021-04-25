@@ -34,14 +34,14 @@ The program will provide all the features from the reference implementation and 
 signer <command> [parameters]
 ```
 
-The programm is very easy to use and each command follows a very simple pattern. The first argument is always the chosen option which can either be generating a key, signing, verifying or advancing the key. The second argument is the keyname, either for generating or using it. At the third position come either the files/folder to work with, the amount to advance they key or the paramter set for generating the key.
+The programm is very easy to use and each command follows a very simple pattern. The first argument is always the chosen option which can either be generating a key, signing, verifying or advancing the key. The second argument can either be the `-t` option which indicates time measurement or the keyname, either for generating or using it. At the third or fourth position come either the files/folder to work with, the amount to advance they key or the paramter set for generating the key.
 
 Sections of the syntax noted with `<>` have to be there, sections with `[]` are optional. However it should be stated that for files, at least a single file has to be passed as no file to sign/verify does not make sense, passing more than one file is of course possible and encouraged as no the loading of the private key also takes some time. Plese note that command and optional parameter do *not* need the brackets around them.
 
 ### Key generation ###
 
 ```text
-signer genkey <keyname> [parameter set]
+signer genkey [-t] <keyname> [parameter set]
 ```
 
 Generates a key with the given name. Usually, the private key, public key and an auxiliary file are created with resonable default values. By default, a Merkle trees with two levels is used. Top tree has 20 levels, bottom tree has 10 which is notaed as `20/10`. The Winternitz is set to 8 for both trees; this minimizes the signature size, gives us a reasonable genkey time (3 minutes with threading), good load times and a billion signatures per key.
@@ -53,11 +53,11 @@ Moreover, a custom `seed` (usually 32 byte hex-notation)  and `i` (16 byte hex-n
 ### Signing ###
 
 ```text
-signer sign <keyname> [files to sign]
+signer sign [-t] <keyname> [files to sign]
 ```
 
 ```text
-signer sign-bulk <keyname> <folder to sign>
+signer sign-bulk [-t] <keyname> <folder to sign>
 ```
 
 Signing one or more files can be done by either specifying all the files individually which should be signed with to the `sign` command or just pass a directory to the `sign-bulk` command. A single folder or one or more files can be passed to the respective command.
@@ -65,11 +65,11 @@ Signing one or more files can be done by either specifying all the files individ
 ### Verification ###
 
 ```text
-signer verify <keyname> [files to verify]
+signer verify [-t] <keyname> [files to verify]
 ```
 
 ```text
-signer verify-bulk <keyname> <folder to verify>
+signer verify-bulk [-t] <keyname> <folder to verify>
 ```
 
 Verfifying one or more files can be done by either specifying all the files individually which should be signed with to the `verify` command or just pass a directory to the `verify-bulk` command. A single folder or one or more files can be passed to the respective command.
@@ -84,7 +84,7 @@ Advances the key with a certain amount, i.e. marking a given number of keys as u
 
 ### Example usage ###
 
-First off, create the new key pair with the name `myKeys` and the parameter set `15/4,10/8:2000`
+First off, create the new key pair with the name `myKeys` and the parameter set `15/4,10/8:2000`.
 
 ```text
 signer genkey myKeys 15/4,10/8:2000
@@ -96,19 +96,19 @@ Use the generated key pair to sign two messages called `myTestFile1` and `myTest
 signer sign myKeys path/to/myTestFile1 path/to/myTestFile2
 ```
 
-Use the generated key pair to sign all files in a directory `myTestDir`
+Use the generated key pair to sign all files in a directory `myTestDir` and print the time needed.
 
 ```text
-signer sign-bulk myKeys path/to/myTestDir
+signer sign-bulk -t  myKeys path/to/myTestDir
 ```
 
-Verify `myTestFile1` and `myTestFile2`
+Verify `myTestFile1` and `myTestFile2` and print the time needed.
 
 ```text
-signer verify myKeys path/to/myTestFile1 path/to/myTestFile2
+signer verify -t myKeys path/to/myTestFile1 path/to/myTestFile2
 ```
 
-Verify `myTestDir`
+Verify `myTestDir`.
 
 ```text
 signer verify-bulk myKeys path/to/myTestDir
@@ -126,15 +126,15 @@ The following parameter sets have been tested with the current state of the impl
 
 | Type    | h(:h)   | w     | aux     |  KeyGenTime  | SigTime    |  SigSize | Signatures | Key Lifetime |
 | ------- |:-------:| -----:|   -----:|       -----: |      -----:|    -----:|      -----:|        -----:|
-| LMS     | 20      | 2     |         |              |            |          |            |              |
-| LMS     | 20      | 4     |         |              |            |          |            |              |
-| LMS     | 20      | 8     |         |              |            |          |            |              |
-| HSS     | 20:10   | 2     |         |              |            |          |            |              |
-| HSS     | 20:10   | 4     |         |              |            |          |            |              |
-| HSS     | 20:10   | 8     |         |              |            |          |            |              |
-| HSS     | 25:15   | 2     |         |              |            |          |            |              |
-| HSS     | 25:15   | 4     |         |              |            |          |            |              |
-| HSS     | 25:15   | 8     |         |              |            |          |            |              |
+| LMS     | 20      | 2     |   10916 |           13 sec |            |          |            |              |
+| LMS     | 20      | 4     |   10916 |           19 sec |            |          |            |              |
+| LMS     | 20      | 8     |   10916 |     2 min 15 sec |            |          |            |              |
+| HSS     | 20:10   | 2     |   10916 |           13 sec |            |          |            |              |
+| HSS     | 20:10   | 4     |   10916 |           19 sec |            |          |            |              |
+| HSS     | 20:10   | 8     |   10916 |     2 min 15 sec |            |          |            |              |
+| HSS     | 25:15   | 2     |    5476 |     7 min 30 sec |            |          |            |              |
+| HSS     | 25:15   | 4     |    5476 |    10 min 35 sec |            |          |            |              |
+| HSS     | 25:15   | 8     |    5476 | 1h 18 min 00 sec |            |          |            |              |
 
 ## Credits ##
 
