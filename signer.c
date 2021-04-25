@@ -49,6 +49,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <ctype.h>
 #include <dirent.h>
 #include "hss.h"
@@ -124,6 +125,7 @@ void *read_file( const char *filename, size_t *len );
 
 /* For main */
 static void usage(char *program);
+void printTime (long diffSec, long diffMicro);
 
 /* ---------- Method implementations ---------- */
 
@@ -1089,12 +1091,12 @@ void *read_file( const char *filename, size_t *len ) {
  */ 
 static void usage(char *program) {
     printf("Usage:\n" );
-    printf(" %s genkey <keyname> [parameter set]\n", program);
-    printf(" %s sign <keyname> [files to sign]\n", program);
-    printf(" %s sign-bulk <keyname> <folder to sign>\n", program);
-    printf(" %s verify <keyname> [files to verify]\n", program);
-    printf(" %s verify-bulk <keyname> <folder to verify>\n", program);
-    printf(" %s advance <keyname> <amount of advance>\n", program);
+    printf(" %s genkey [-t] <keyname> [parameter set]\n", program);
+    printf(" %s sign [-t] <keyname> [files to sign]\n", program);
+    printf(" %s sign-bulk [-t] <keyname> <folder to sign>\n", program);
+    printf(" %s verify  [-t]<keyname> [files to verify]\n", program);
+    printf(" %s verify-bulk [-t] <keyname> <folder to verify>\n", program);
+    printf(" %s advance [-t] <keyname> <amount of advance>\n", program);
 }
 
 /**
@@ -1111,18 +1113,44 @@ static const char *check_prefix (const char *s, const char *prefix) {
 }
 
 /**
+ * Prints the time in seconds which it took to execute the task
+ * Based on https://levelup.gitconnected.com/8-ways-to-measure-execution-time-in-c-c-48634458d0f9 number 3
+ */
+void printTime (long diffSec, long diffMicro) {
+    double secs = (diffSec % 60) + diffMicro * 1e-6;
+    long minDiff = diffSec / 60;
+    int mins = minDiff % 60;
+    int hours = minDiff / 60;
+    printf("\nIt took %dh %dmin %.3fsec to complete this task\n", hours, mins, secs);
+}
+
+/**
  * Main function, takes care of calling the correct methods
  */ 
 int main(int argc, char **argv) {
+    int keyIndex=2, fileIndex=3;
+    
+    bool meassureTime = false;
+    struct timeval start, end;
+
     if (argc < 2) {
         usage(argv[0]);
         return 0;
     }
+
+    if (0 == strcmp(argv[2], "-t")) {
+        printf("-t param chosen, starting time meassurement");
+        meassureTime = true;
+        keyIndex = 3;
+        fileIndex = 4;
+        gettimeofday(&start, 0);
+    }
+
     if (0 == strcmp( argv[1], "genkey")) {
         const char *keyname = 0;
         const char *parmname = 0;
         int i;
-        for (i=2; i<argc; i++) {
+        for (i=keyIndex; i<argc; i++) {
             const char *s;
             if ((s = check_prefix( argv[i], "seed="))) {
                 if (seedbits) {
@@ -1165,23 +1193,21 @@ int main(int argc, char **argv) {
         if (!keygen( keyname, parmname )) {
             printf("Error creating keys\n");
         }
-        return 0;
     }
-    if (0 == strcmp( argv[1], "sign" )) {
-        if (argc < 4) {
+    else if (0 == strcmp( argv[1], "sign" )) {
+        if (argc < fileIndex+1) {
             printf( "Error: mssing keyname and file argument\n" );
             usage(argv[0]);
             return 0;
         }
 
-        if (!sign( argv[2], &argv[3], argc-3)) {
+        if (!sign( argv[keyIndex], &argv[fileIndex], argc-fileIndex)) {
             printf("Error signing\n");
         }
-        return 0;
     }
-    if (0 == strcmp( argv[1], "sign-bulk")) {
-        if (argc != 4) {
-            if (argc < 4) {
+    else if (0 == strcmp( argv[1], "sign-bulk")) {
+        if (argc != fileIndex+1) {
+            if (argc < fileIndex+1) {
                 printf("Error: missing keyname and folder argument\n");
             } else {
                 printf("Error: Too many arguments.\n");
@@ -1189,26 +1215,23 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!bulk( argv[2], argv[3], bulk_signing)) {
+        if (!bulk( argv[keyIndex], argv[fileIndex], bulk_signing)) {
             printf("Error signing bulk\n");
         }
-
-        return 0;
     }
-    if (0 == strcmp(argv[1], "verify")) {
-        if (argc < 4) {
+    else if (0 == strcmp(argv[1], "verify")) {
+        if (argc < fileIndex+1) {
             printf("Error: mssing keyname and file argument\n");
             usage(argv[0]);
             return 0;
         }
-        if (!verify( argv[2], &argv[3], argc-3)) {
+        if (!verify( argv[keyIndex], &argv[fileIndex], argc-fileIndex)) {
             printf("Error verifying\n");
         }
-        return 0;
     }
-    if (0 == strcmp(argv[1], "verify-bulk")) {
-        if (argc != 4) {
-            if (argc < 4) {
+    else if (0 == strcmp(argv[1], "verify-bulk")) {
+        if (argc != fileIndex+1) {
+            if (argc < fileIndex+1) {
                 printf("Error: missing keyname and folder argument\n");
             } else {
                 printf("Error: Too many arguments.\n");
@@ -1216,24 +1239,29 @@ int main(int argc, char **argv) {
             usage(argv[0]);
             return 0;
         }
-        if (!bulk(argv[2], argv[3], bulk_verifying)) {
+        if (!bulk(argv[keyIndex], argv[fileIndex], bulk_verifying)) {
             printf("Error verifying bulk\n");
         }
-
-        return 0;
     }
-    if (0 == strcmp( argv[1], "advance")) {
-        if (argc != 4) {
+    else if (0 == strcmp( argv[1], "advance")) {
+        if (argc != fileIndex+1) {
             printf("Error: mssing amount to device the file\n");
             usage(argv[0]);
             return 0;
         }
-        if (!advance( argv[2], argv[3])) {
+        if (!advance( argv[keyIndex], argv[fileIndex])) {
             printf( "Error advancing\n");
         }
         return 0;
     }
+    else {
+        usage(argv[0]);
+    }
 
-    usage(argv[0]);
+    if (meassureTime) {
+        gettimeofday(&end, 0);
+        printTime(end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
+    }
+
     return 0;
 }
