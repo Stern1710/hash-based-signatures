@@ -124,17 +124,19 @@ signer advance myKeys 3
 
 The following parameter sets have been tested with the current state of the implementation using the following parameters. The signature sizes are the ones meassured on the system, the meassured time is taken from a Ryzen 5 mobile processing unit. For the hash function SHA-256 was used, therefore n equals to 32. We ignored the Winternitz parameter of w=1 deliberatly as this extreme settings seems very unlikely to us to be used due to the very large signature sizes where performance can be gained from using other tricks such as advancing the key, generating trees on demand, etc.
 
-| Type    | h(:h)   | w     | aux     |  KeyGenTime  | SigTime    |  SigSize | Signatures | Key Lifetime |
-| ------- |:-------:| -----:|   -----:|       -----: |      -----:|    -----:|      -----:|        -----:|
-| LMS     | 20      | 2     |   10916 |           13 sec |            |          |            |              |
-| LMS     | 20      | 4     |   10916 |           19 sec |            |          |            |              |
-| LMS     | 20      | 8     |   10916 |     2 min 15 sec |            |          |            |              |
-| HSS     | 20:10   | 2     |   10916 |           13 sec |            |          |            |              |
-| HSS     | 20:10   | 4     |   10916 |           19 sec |            |          |            |              |
-| HSS     | 20:10   | 8     |   10916 |     2 min 15 sec |            |          |            |              |
-| HSS     | 25:15   | 2     |    5476 |     7 min 30 sec |            |          |            |              |
-| HSS     | 25:15   | 4     |    5476 |    10 min 35 sec |            |          |            |              |
-| HSS     | 25:15   | 8     |    5476 | 1h 18 min 00 sec |            |          |            |              |
+The amount of signatures is calculated by 2^h1 for a single tree (LMS) and 2^h1 * 2^h2 for the HSS Multitrees. Last but not least, the key lifetime is for the assumption that each second 1000 signatures are generated.
+
+| Type    | h1(:h2)   | w     | aux     |       KeyGenTime | SigTime    |  SigSize |         Signatures | Key Lifetime |
+| ------- |:-------:| -----:|   -----:|           -----: |      -----:|    -----:|             -----:|        -----:|
+| LMS     | 20      | 2     |   10916 |           13 sec |            |          |         1 048 576 |            17 mins  |
+| LMS     | 20      | 4     |   10916 |           19 sec |            |          |         1 048 576 |            17 mins  |
+| LMS     | 20      | 8     |   10916 |     2 min 15 sec |            |          |         1 048 576 |            17 mins  |
+| HSS     | 20:10   | 2     |   10916 |           13 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
+| HSS     | 20:10   | 4     |   10916 |           19 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
+| HSS     | 20:10   | 8     |   10916 |     2 min 15 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
+| HSS     | 25:15   | 2     |    5476 |     7 min 30 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
+| HSS     | 25:15   | 4     |    5476 |    10 min 35 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
+| HSS     | 25:15   | 8     |    5476 | 1h 18 min 00 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
 
 ## Credits ##
 
