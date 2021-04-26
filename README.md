@@ -126,17 +126,19 @@ The following parameter sets have been tested with the current state of the impl
 
 The amount of signatures is calculated by 2^h1 for a single tree (LMS) and 2^h1 * 2^h2 for the HSS Multitrees. Last but not least, the key lifetime is for the assumption that each second 1000 signatures are generated.
 
-| Type    | h1(:h2)   | w     | aux     |       KeyGenTime | SigTime    |  SigSize |         Signatures | Key Lifetime |
-| ------- |:-------:| -----:|   -----:|           -----: |      -----:|    -----:|             -----:|        -----:|
-| LMS     | 20      | 2     |   10916 |           13 sec |            |          |         1 048 576 |            17 mins  |
-| LMS     | 20      | 4     |   10916 |           19 sec |            |          |         1 048 576 |            17 mins  |
-| LMS     | 20      | 8     |   10916 |     2 min 15 sec |            |          |         1 048 576 |            17 mins  |
-| HSS     | 20:10   | 2     |   10916 |           13 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
-| HSS     | 20:10   | 4     |   10916 |           19 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
-| HSS     | 20:10   | 8     |   10916 |     2 min 15 sec |            |          |     1 073 741 824 |  12 days   9 hours  |
-| HSS     | 25:15   | 2     |    5476 |     7 min 30 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
-| HSS     | 25:15   | 4     |    5476 |    10 min 35 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
-| HSS     | 25:15   | 8     |    5476 | 1h 18 min 00 sec |            |          | 1 099 511 627 776 |  34 years 10 months |
+For the signature time, the evaluation is done over a 6457 files large folder (with subfolders) with a total size of 21.2 gigabytes. It should be noted that the majority of files are on the smaller side and in the kilobyte or lower megabyte area with some bigger files up to a couple hundred megabytes. The signature size is evaluated from the generated signatures.
+
+| Type    | h1(:h2) | w     | aux     |       KeyGenTime |       SigTime |  SigSize |  VerifyTime |        Signatures | Key Lifetime for 1000 sig/sec |
+| ------- |:-------:| -----:|   -----:|           -----: |         -----:|    -----:|      -----: |             -----:|                         -----:|
+| LMS     | 20      | 2     |   10916 |           13 sec |        32 sec |     4944 |      23 sec |         1 048 576 |                      17 mins  |
+| LMS     | 20      | 4     |   10916 |           19 sec |        36 sec |     2832 |      23 sec |         1 048 576 |                      17 mins  |
+| LMS     | 20      | 8     |   10916 |     2 min 15 sec |        50 sec |     1776 |      36 sec |         1 048 576 |                      17 mins  |
+| HSS     | 20:10   | 2     |   10916 |           13 sec |        31 sec |     9620 |      24 sec |     1 073 741 824 |            12 days   9 hours  |
+| HSS     | 20:10   | 4     |   10916 |           19 sec |        31 sec |     5396 |      24 sec |     1 073 741 824 |            12 days   9 hours  |
+| HSS     | 20:10   | 8     |   10916 |     2 min 15 sec |        41 sec |     3284 |      30 sec |     1 073 741 824 |            12 days   9 hours  |
+| HSS     | 25:15   | 2     |    5476 |     7 min 30 sec |        36 sec |     9940 |      24 sec | 1 099 511 627 776 |            34 years 10 months |
+| HSS     | 25:15   | 4     |    5476 |    10 min 35 sec |        39 sec |     5716 |      24 sec | 1 099 511 627 776 |            34 years 10 months |
+| HSS     | 25:15   | 8     |    5476 | 1h 18 min 00 sec |  1 min 35 sec |     3604 |      30 sec | 1 099 511 627 776 |            34 years 10 months |
 
 ## Credits ##
 

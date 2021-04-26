@@ -357,7 +357,7 @@ static int sign(const char *keyname, char **files, const int num_files) {
 
     printf("Signing ...");
     for (int i=0; files[i] && i < num_files; i++) {
-        if (i%10 == 0 && i > 0) {
+        if (i%1000 == 0 && i > 0) {
             printf(".");
         }
 
@@ -484,7 +484,7 @@ static int verify(const char *keyname, char **files, const int num_files) {
     printf("Verifying ...");
     int i;
     for (i=0; files[i] && i < num_files; i++) {
-        if (i%10 == 0 && i > 0) { //Give the user some feel that something is happening
+        if (i%1000 == 0 && i > 0) { //Give the user some feel that something is happening
             printf(".");
         }
 
@@ -501,7 +501,8 @@ static int verify(const char *keyname, char **files, const int num_files) {
         sprintf( sig_file_name, "%s.sig", sign_progress[i].name);
         size_t sig_len;
         void *sig = read_file( sig_file_name, &sig_len );
-        free(sig_file_name ); sig_file_name = 0;
+        free(sig_file_name );
+        sig_file_name = 0;
         if (!sig) {
             sign_progress[i].state = no_sig;
             continue;
@@ -1139,7 +1140,7 @@ int main(int argc, char **argv) {
     }
 
     if (0 == strcmp(argv[2], "-t")) {
-        printf("-t param chosen, starting time meassurement");
+        printf("-t param chosen, starting time meassurement\n");
         meassureTime = true;
         keyIndex = 3;
         fileIndex = 4;
