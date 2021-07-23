@@ -4,10 +4,6 @@ FOLDER="."
 FILE_PREFIX="file_"
 NUM_FILES=0
 
-if [ "$#" -eq 1 ]; then
-    FOLDER="$1"
-fi
-
 if [ "$#" -eq 2 ]; then
     FOLDER="$1"
     NUM_FILES=$2
