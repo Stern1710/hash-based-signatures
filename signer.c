@@ -973,7 +973,7 @@ char **find_files(char* directory, char **files, int *file_size, int *cur_pos) {
                     if (*cur_pos >= *file_size) {
                         //We need to allocate more space through realloc
                         char **files_ext = realloc(files, (*file_size)*2 * sizeof(char*));
-                        if (!files) { //Failed, return old allocated area
+                        if (!files_ext) { //Failed, return old allocated area
                             return files;
                         } else { //Otherwise double the file_size and reassign pointer
                             files = files_ext;
